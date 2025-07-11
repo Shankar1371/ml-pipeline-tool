@@ -1,3 +1,5 @@
+// Routes responsible for saving, executing and predicting with ML pipelines.
+// Training and prediction are offloaded to Python scripts.
 const express = require('express')
 const router = express.Router()
 const { spawn } = require('child_process')
@@ -8,7 +10,11 @@ const path = require('path')
 const unzipper = require('unzipper')
 const WebSocket = require('ws')
 
+// Store connected WebSocket clients so we can broadcast training logs.
 let wsClients = []
+
+// Create a WebSocket server and keep track of connections. Clients receive
+// log lines from the Python processes in real time.
 function initWebSocket(server) {
   const wss = new WebSocket.Server({ server })
   wss.on('connection', (socket) => {
@@ -20,6 +26,7 @@ function initWebSocket(server) {
   })
 }
 
+// Helper to send log output to every connected WebSocket client.
 function broadcastLog(message) {
   wsClients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
@@ -28,6 +35,8 @@ function broadcastLog(message) {
   })
 }
 
+// Files uploaded by the user are stored in the uploads/ directory. The ZIP
+// dataset is extracted to uploads/dataset for the Python scripts to use.
 const uploadDir = path.join(__dirname, '..', 'uploads')
 const datasetDir = path.join(uploadDir, 'dataset')
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true })
@@ -39,6 +48,7 @@ const storage = multer.diskStorage({
 })
 const upload = multer({ storage })
 
+// Persist a pipeline's structure to MongoDB so it can be loaded later.
 router.post('/save', async (req, res) => {
   const { name, nodes, edges } = req.body
   if (!name || !nodes || !edges) {
@@ -49,6 +59,7 @@ router.post('/save', async (req, res) => {
   res.status(201).json({ message: 'Pipeline saved successfully!' })
 })
 
+// Upload a dataset ZIP and extract it for training.
 router.post('/upload', upload.single('images'), async (req, res) => {
   const zipPath = req.file.path
 
@@ -71,6 +82,7 @@ router.post('/upload', upload.single('images'), async (req, res) => {
   }
 })
 
+// Retrieve all saved pipelines from the database so the user can pick one.
 router.get('/all', async (req, res) => {
   try {
     const pipelines = await Pipeline.find()
@@ -81,6 +93,9 @@ router.get('/all', async (req, res) => {
   }
 })
 
+// Execute the selected pipeline by passing the node/edge data to the
+// Python ml_engine script. Logs from the Python process are streamed via
+// WebSocket.
 router.post('/execute', async (req, res) => {
   const { nodes, edges } = req.body
   if (!nodes || nodes.length === 0) {
@@ -118,6 +133,8 @@ router.post('/execute', async (req, res) => {
     }
   })
 
+  // Data sent to the Python script via stdin. It includes the React Flow
+  // nodes/edges along with the folder containing the extracted images.
   const payload = {
     nodes,
     edges,
@@ -128,6 +145,7 @@ router.post('/execute', async (req, res) => {
   pythonProcess.stdin.end()
 })
 
+// Run a single image through the trained model by invoking predict.py.
 router.post('/predict', upload.single('image'), (req, res) => {
   const testImagePath = req.file.path
   console.log(' Launching ML engine for prediction...')
@@ -168,6 +186,7 @@ router.post('/predict', upload.single('image'), (req, res) => {
     }
   })
 
+  // Send the selected image path to the Python prediction script.
   py.stdin.write(JSON.stringify({ imagePath: testImagePath }))
   py.stdin.end()
 })

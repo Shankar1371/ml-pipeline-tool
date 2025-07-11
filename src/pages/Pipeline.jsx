@@ -1,3 +1,6 @@
+// Visual editor page where users build and execute their ML pipeline. Nodes
+// are dragged onto a canvas and the resulting graph is sent to the backend for
+// training.
 import React, { useCallback, useRef, useState, useEffect } from 'react'
 import ReactFlow, {
   ReactFlowProvider,
@@ -12,6 +15,8 @@ import 'reactflow/dist/style.css'
 import styled from 'styled-components'
 import api from '../api/api'
 
+// Available pipeline steps users can drag into the canvas. Each entry defines
+// a label and a background color for the node.
 const nodeTypes = {
   dataIngestion: {
     label: 'Data Ingestion',
@@ -76,6 +81,8 @@ const Pipeline = () => {
   const [trainingProgress, setTrainingProgress] = useState(0)
   const [logs, setLogs] = useState([])
 
+  // Connect to the backend WebSocket to receive real-time logs during
+  // training.
   useEffect(() => {
     const ws = new WebSocket('ws://localhost:5000')
     ws.onmessage = (event) => {
@@ -119,6 +126,8 @@ const Pipeline = () => {
   )
 
   const handleFileUpload = async (e) => {
+    // Users upload a ZIP containing labeled image folders. The backend
+    // extracts it to prepare training data.
     const file = e.target.files[0]
     if (!file || !file.name.endsWith('.zip')) {
       alert('Please upload a .zip file with labeled image folders.')
@@ -146,6 +155,8 @@ const Pipeline = () => {
   }
 
   const executePipeline = async () => {
+    // Sends the current graph to the backend which runs ml_engine.py
+    // and streams logs back via WebSocket.
     if (nodes.length === 0) {
       alert('Please add nodes to execute the pipeline.')
       return
@@ -163,6 +174,7 @@ const Pipeline = () => {
   }
 
   const savePipeline = async () => {
+    // Store the current pipeline graph in MongoDB so it can be reused later.
     if (nodes.length === 0) {
       alert('Cannot save an empty pipeline!')
       return
@@ -182,6 +194,8 @@ const Pipeline = () => {
   }
 
   const loadPipeline = async () => {
+    // Fetch previously saved pipelines from the backend and let the user
+    // choose one to load into the editor.
     try {
       const response = await api.get('/pipelines/all')
       const pipelines = response.data
