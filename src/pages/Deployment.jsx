@@ -1,3 +1,5 @@
+// Page showing results of the last pipeline run and allowing single-image
+// predictions using the trained model.
 import React, { useEffect, useState } from 'react'
 import styled from 'styled-components'
 import api from '../api/api'
@@ -10,6 +12,8 @@ const Deployment = () => {
   const [predictedClass, setPredictedClass] = useState('')
   const [isPredicting, setIsPredicting] = useState(false)
 
+  // Load the output of the most recent pipeline execution from localStorage
+  // so the user can view results after a page refresh.
   useEffect(() => {
     try {
       const data = localStorage.getItem('pipelineOutput')
@@ -24,6 +28,8 @@ const Deployment = () => {
   }, [])
 
   const handleFileChange = (event) => {
+    // Store the chosen image locally so it can be previewed and sent to the
+    // backend for prediction.
     const file = event.target.files[0]
     if (file) {
       setSelectedFile(file)
@@ -33,6 +39,8 @@ const Deployment = () => {
   }
 
   const handlePredict = async () => {
+    // Submit the selected image to the backend prediction endpoint and
+    // display the returned class label.
     if (!selectedFile) {
       alert('Please select an image to predict.')
       return

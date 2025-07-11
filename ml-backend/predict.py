@@ -1,3 +1,5 @@
+"""Run inference on a single image using the trained model."""
+
 import sys
 import json
 import os
@@ -7,6 +9,7 @@ import joblib
 import traceback
 
 def preprocess_image(path):
+    """Load an image and convert it to the format expected by the model."""
     try:
         print("Preprocessing image...", file=sys.stderr, flush=True)
         img = Image.open(path).convert('L')  # Grayscale
@@ -18,6 +21,7 @@ def preprocess_image(path):
         raise RuntimeError(f"Image preprocessing failed: {e}")
 
 def main():
+    """Load the trained model and output a prediction for one image."""
     try:
         print("Starting prediction script...", file=sys.stderr, flush=True)
 
@@ -35,7 +39,7 @@ def main():
 
         print(f" Image path received: {image_path}", file=sys.stderr, flush=True)
 
-        # Load model and encoder
+        # Load model and label encoder saved during training.
         base_dir = os.path.dirname(__file__)
         model_path = os.path.join(base_dir, 'uploads', 'model.pkl')
         encoder_path = os.path.join(base_dir, 'uploads', 'label_encoder.pkl')

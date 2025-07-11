@@ -1,3 +1,11 @@
+"""Train a simple image classification model based on a pipeline description.
+
+The script reads a JSON payload from stdin describing the nodes and edges of
+the pipeline as well as the directory of extracted images. It outputs progress
+messages to stderr (forwarded to the browser via WebSocket) and finally emits a
+JSON result on stdout.
+"""
+
 import sys
 import os
 import json
@@ -12,6 +20,7 @@ from sklearn.preprocessing import LabelEncoder
 import traceback
 
 def extract_features(image_path):
+    """Convert an image to a flat grayscale feature vector."""
     try:
         img = Image.open(image_path).convert("L").resize((64, 64))
         return np.array(img).flatten()
@@ -20,6 +29,7 @@ def extract_features(image_path):
         return None
 
 def build_execution_order(nodes, edges):
+    """Return node ids in topological order to respect dependencies."""
     graph = defaultdict(list)
     in_degree = {node['id']: 0 for node in nodes}
     for edge in edges:
@@ -40,6 +50,7 @@ def build_execution_order(nodes, edges):
     return order
 
 def run_pipeline(image_dir, nodes, edges):
+    """Execute the pipeline and train a RandomForest model."""
     print("Starting ML pipeline execution...", file=sys.stderr, flush=True)
 
     image_paths, labels = [], []
@@ -122,6 +133,7 @@ def run_pipeline(image_dir, nodes, edges):
     sys.stdout.flush()
 
 def main():
+    """Entry point for reading payload from stdin and running the pipeline."""
     try:
         input_data = sys.stdin.read()
         payload = json.loads(input_data)

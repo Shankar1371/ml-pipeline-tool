@@ -1,3 +1,6 @@
+// Basic Express setup for the ML backend API. This file boots the
+// Node server, connects to MongoDB and wires up the WebSocket used for
+// streaming logs to the front end.
 const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
@@ -15,6 +18,8 @@ app.use(express.json())
 
 app.use('/pipelines', pipelineRoutes)
 
+// Once the database connection succeeds we start the API server and the
+// WebSocket used for streaming training logs.
 mongoose
   .connect(process.env.MONGODB_URI)
   .then(() => {
