@@ -1,0 +1,18 @@
+{
+  "nodes": [
+    {
+      "id": "1",
+      "type": "default",
+      "data": { "label": "Data Ingestion" },
+      "position": { "x": 100, "y": 50 }
+    },
+    {
+      "id": "2",
+      "type": "default",
+      "data": { "label": "Model Training" },
+      "position": { "x": 300, "y": 50 }
+    }
+  ],
+  "edges": [{ "id": "e1-2", "source": "1", "target": "2" }],
+  "imageFolder": "uploads/dataset"
+}
